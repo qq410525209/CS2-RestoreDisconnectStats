@@ -46,16 +46,23 @@ public class CS2_RestoreDisconnectStats : BasePlugin, IPluginConfig<CS2_RestoreD
 		Config = config;
 	}
 
-	public void OnMapStart(string mapname)
-	{
-		SavedPlayerStats.Clear();
+public void OnMapStart(string mapname)
+{
+	// 换图时清空旧的 GameRules 引用，避免在新地图加载前访问已经销毁的旧对象导致 AccessViolation
+	GameRules = null;
+	SavedPlayerStats.Clear();
 
-		AddTimer(1, () =>
-		{
-			GameRules ??= Utilities.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules").First().GameRules;
-			startMoney = ConVar.Find("mp_startmoney")?.GetPrimitiveValue<int>() ?? 800;
-		});
-	}
+	AddTimer(1, () =>
+	{
+		// 安全获取当前地图的 GameRules，如果未找到实体则保持为 null
+		GameRules ??= Utilities
+			.FindAllEntitiesByDesignerName<CCSGameRulesProxy>("cs_gamerules")
+			.FirstOrDefault()
+			?.GameRules;
+
+		startMoney = ConVar.Find("mp_startmoney")?.GetPrimitiveValue<int>() ?? 800;
+	});
+}
 
 	public void OnClientDisconnect(int playerSlot)
 	{
